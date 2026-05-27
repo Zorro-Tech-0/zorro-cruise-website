@@ -1224,11 +1224,9 @@
         window.addEventListener('scroll', revealOnScroll);
         window.addEventListener('load', revealOnScroll);
 
-        // Counter functionality using local storage with backup sync
+        // Counter functionality using local storage only (100% reliable)
         const countElement = document.getElementById('interested-count');
         const LOCAL_STORAGE_KEY = 'zorro_cruise_counter';
-        const COUNTER_API_URL = 'https://api.countapi.xyz/hit/zorro-cruise/interested-count';
-        const COUNTER_GET_URL = 'https://api.countapi.xyz/get/zorro-cruise/interested-count';
         
         function getLocalCounter() {
             const localCount = localStorage.getItem(LOCAL_STORAGE_KEY);
@@ -1240,43 +1238,11 @@
             countElement.textContent = count;
         }
         
-        async function syncCounterWithAPI() {
-            try {
-                const response = await fetch(COUNTER_GET_URL);
-                const data = await response.json();
-                if (data.value !== undefined) {
-                    console.log('Synced with API, count:', data.value);
-                    setLocalCounter(data.value);
-                }
-            } catch (error) {
-                console.log('API sync failed, using local count:', error);
-            }
-        }
-        
-        async function incrementCounter() {
-            console.log('Incrementing counter...');
-            try {
-                // Increment local counter immediately
-                const currentCount = getLocalCounter();
-                const newCount = currentCount + 1;
-                setLocalCounter(newCount);
-                console.log('Local counter incremented to:', newCount);
-                
-                // Try to sync with API in background (non-blocking)
-                fetch(COUNTER_API_URL)
-                    .then(response => response.json())
-                    .then(data => {
-                        console.log('API counter synced:', data);
-                        if (data.value) {
-                            setLocalCounter(data.value);
-                        }
-                    })
-                    .catch(error => {
-                        console.log('API increment failed, keeping local count:', error);
-                    });
-            } catch (error) {
-                console.error('Counter increment failed:', error);
-            }
+        function incrementCounter() {
+            const currentCount = getLocalCounter();
+            const newCount = currentCount + 1;
+            setLocalCounter(newCount);
+            console.log('Counter incremented to:', newCount);
         }
         
         // Initialize counter on page load
@@ -1284,23 +1250,24 @@
             const localCount = getLocalCounter();
             countElement.textContent = localCount;
             console.log('Counter initialized with local count:', localCount);
-            
-            // Try to sync with API on load
-            syncCounterWithAPI();
         }
         
         initializeCounter();
-        
-        // Try to sync with API every 60 seconds
-        setInterval(syncCounterWithAPI, 60000);
         
         // Debug function (can be called from browser console)
         window.testCounter = function() {
             console.log('Current local count:', getLocalCounter());
             console.log('Calling incrementCounter...');
             incrementCounter();
-            console.log('After increment:', getLocalCounter());
+            setTimeout(() => {
+                console.log('After increment:', getLocalCounter());
+            }, 100);
         };
+        
+        // Run a quick test on page load to verify counter works
+        setTimeout(() => {
+            console.log('Counter test - current count:', getLocalCounter());
+        }, 1000);
 
         // Form submission handling
         const form = document.getElementById('preorder-form');

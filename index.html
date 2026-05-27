@@ -1227,13 +1227,24 @@
         // Counter increment function (must be defined before form handler)
         async function incrementCounter() {
             try {
-                const response = await fetch(`https://api.countapi.xyz/hit/${NAMESPACE}/${KEY}`);
-                const data = await response.json();
-                if (data.value) {
-                    countElement.textContent = data.value;
-                }
+                // First get current value
+                const getResponse = await fetch(`https://kvstore.io/${KVSTORE_NAMESPACE}/${KVSTORE_KEY}`);
+                const getData = await getResponse.json();
+                const currentValue = getData.value !== undefined ? parseInt(getData.value) : 0;
+                
+                // Increment and update
+                const newValue = currentValue + 1;
+                await fetch(`https://kvstore.io/${KVSTORE_NAMESPACE}/${KVSTORE_KEY}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(newValue)
+                });
+                
+                // Update display
+                countElement.textContent = newValue;
+                console.log('Counter incremented to:', newValue);
             } catch (error) {
-                console.log('Failed to increment counter');
+                console.error('Failed to increment counter:', error);
             }
         }
 
@@ -1290,22 +1301,32 @@
             });
         });
 
-        // Counter functionality using CountAPI (free counter service)
-        const NAMESPACE = 'zorro-cruise';
-        const KEY = 'interested-count';
+        // Counter functionality using KVstore.io (more reliable than CountAPI)
+        const KVSTORE_NAMESPACE = 'zorro-cruise';
+        const KVSTORE_KEY = 'interested-count';
         const countElement = document.getElementById('interested-count');
         
         async function getCounter() {
             try {
-                const response = await fetch(`https://api.countapi.xyz/get/${NAMESPACE}/${KEY}`);
+                const response = await fetch(`https://kvstore.io/${KVSTORE_NAMESPACE}/${KVSTORE_KEY}`);
                 const data = await response.json();
-                if (data.value) {
+                if (data.value !== undefined) {
                     countElement.textContent = data.value;
                     return data.value;
+                } else {
+                    // Initialize counter if it doesn't exist
+                    await fetch(`https://kvstore.io/${KVSTORE_NAMESPACE}/${KVSTORE_KEY}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(0)
+                    });
+                    countElement.textContent = 0;
+                    return 0;
                 }
             } catch (error) {
                 console.log('Counter service unavailable, using default value');
-                return 0; // Default fallback value
+                countElement.textContent = 0;
+                return 0;
             }
         }
         
